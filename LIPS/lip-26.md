@@ -1,11 +1,11 @@
 ---
 lip: 26
 title: Community Staking Module
-status: Proposed
+status: Implemented
 author: Dmitry Gusakov, Sergey Khomutinin, Dmitry Chernukhin, Vladimir Gorkovenko
 discussions-to: https://research.lido.fi/t/community-staking-module/5917
 created: 2024-08-02
-updated: 2024-08-02
+updated: 2024-11-01
 ---
 
 
@@ -114,7 +114,7 @@ Due to [optimistic vetting approach](https://hackmd.io/gGRgZ0yeTnm-9SSFuHrXwg#De
 
 ![Rewards claim](./assets/lip-26/rewards-claim.png)
 
-Total rewards for the CSM Node Operators are comprised of [bond rewards and staking fees](https://hackmd.io/gGRgZ0yeTnm-9SSFuHrXwg#%F0%9F%A4%91-Step-2-Rewards). To claim the total rewards, the Node Operator needs to bring proof of the latest `cumulativeFeeShares` in the rewards tree. With that proof `CSAccounting.sol` pulls the Node Operator's portion of the staking fees from the `CSFeeDistributor.sol` and combines it with the Node Operator's bond. After that, all bond funds exceeding the bond required for the currently active keys are available for claim. 
+Total rewards for the CSM Node Operators are comprised of [bond rewards and staking fees](https://hackmd.io/gGRgZ0yeTnm-9SSFuHrXwg#%F0%9F%A4%91-Step-2-Rewards). To claim the total rewards, the Node Operator needs to bring proof of the latest `cumulativeFeeShares` in the rewards tree. With that proof `CSAccounting.sol` pulls the Node Operator's portion of the staking fees from the `CSFeeDistributor.sol` and combines it with the Node Operator's bond. After that, all bond funds exceeding the bond required for the currently active keys are available for claim.
 
 Node Operator can transfer staking rewards to the bond without transferring it to the reward address by passing `0` as the amount requested for the claim.
 
@@ -238,7 +238,7 @@ The bond stored in stETH inevitably inherits all stETH features, including the p
 
 #### Malicious Oracles can steal all unclaimed CSM rewards
 
-A single updatable Merkle tree approach to the rewards distribution allows malicious Oracles to collude and submit a version of the Merkle tree, indicating that all rewards should be allocated to a single Node Operator (previously created by malicious actors). The worst-case scenario is when all unclaimed rewards stored on the CSM contract will be available for claim by a single Node Operator. 
+A single updatable Merkle tree approach to the rewards distribution allows malicious Oracles to collude and submit a version of the Merkle tree, indicating that all rewards should be allocated to a single Node Operator (previously created by malicious actors). The worst-case scenario is when all unclaimed rewards stored on the CSM contract will be available for claim by a single Node Operator.
 
 ### Known issues
 
@@ -269,7 +269,7 @@ Given no losses for the protocol, a significant cost of attack (1 or 8 ETH), and
 - [CSM Prover Tool (CSM Bot)](https://github.com/lidofinance/csm-prover-tool)
 - [CSM Performance Oracle](https://github.com/lidofinance/lido-oracle/tree/csm-oracle-via-module)
 - [CSM Settle El Rewards Stealing Penalty ET](https://github.com/lidofinance/easy-track/tree/feat/csm-el-stealing-penalty-settling)
-- [Community Staking Landscape](https://hackmd.io/@lido/Byp775Ay6) 
+- [Community Staking Landscape](https://hackmd.io/@lido/Byp775Ay6)
 - [CSM Architecture](https://hackmd.io/@lido/rJMcGj0Ap)
 - [CSM Parameters](https://hackmd.io/@lido/H1G3OPvEA)
 - [CSM Research Post](https://research.lido.fi/t/community-staking-module/5917)
