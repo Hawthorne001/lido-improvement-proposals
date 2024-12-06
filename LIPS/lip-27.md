@@ -34,21 +34,21 @@ If we denote:
 
 then the relationship between shares and ether is given by:
 
-$$
+```math
 \Delta ETH_{\text{ext}} = \Delta S_{\text{ext}} \times \text{shareRate}.
-$$
+```
 
 Inversely, if the external ether contribution $\Delta ETH_{\text{ext}}$ is known:
 
-$$
+```math
 \Delta S_{\text{ext}} = \frac{\Delta ETH_{\text{ext}}}{\text{shareRate}}.
-$$
+```
 
 After minting, the external balance is updated as:
 
-$$
-\text{externalBalance}_{\text{new}} = \text{externalBalance}_{\text{old}} + \Delta ETH_{\text{ext}}.
-$$
+```math
+\text{externalBalance}_{\text{new}} = \text{externalBalance}_{\text{old}} + \Delta ETH_{\text{ext}}
+```
 
 ### Burn external shares
 
@@ -59,29 +59,29 @@ For burning:
 - $\Delta S_{\text{ext}}$ is the number of external shares to burn,
 - The corresponding ether amount to remove from external balance is:
 
-$$
+```math
 \Delta ETH_{\text{ext, burn}} = \Delta S_{\text{ext}} \times \text{shareRate}.
-$$
+```
 
 Thus, the external balance becomes:
 
-$$
+```math
 \text{externalBalance}_{\text{new}} = \text{externalBalance}_{\text{old}} - \Delta ETH_{\text{ext, burn}}.
-$$
+```
 
 ### stETH token rebase
 
 The total pooled ether (`totalPooledEther`) considering the external balance is:
 
-$$
+```math
 \text{totalPooledEther} = \text{bufferedEther} + \text{CLbalance} + \text{transientBalance} + \text{externalBalance}.
-$$
+```
 
 The share rate is defined as:
 
-$$
+```math
 \text{shareRate} = \frac{\text{totalPooledEther}}{\text{totalShares}}.
-$$
+```
 
 Any changes in `externalBalance` affect `totalPooledEther` and thus the `shareRate` during a rebase.
 
