@@ -27,6 +27,7 @@ This proposal extends the accounting model to include an additional ether supply
 A newly introduced "external accounting contract" (trusted by the Lido core contract) is allowed to mint stETH shares to a specified recipient. The amount of external stETH shares minted is fully backed by an equivalent external ether amount (abstracted as an external balance). This increases the protocol’s stored `externalBalance` value, thus raising the total ether backing stETH.
 
 If we denote:
+
 - $\Delta S_{\text{ext}}$ as the number of external shares to be minted,
 - $\Delta ETH_{\text{ext}}$ as the corresponding external ether amount,
 - $\text{shareRate} = \frac{\text{totalPooledEther}}{\text{totalShares}}$,
@@ -54,6 +55,7 @@ $$
 The external accounting contract can also burn a specified amount of stETH shares from its own balance. This operation represents a redemption of externally backed ether from the system’s perspective, decreasing the stored `externalBalance` value by the corresponding ether amount.
 
 For burning:
+
 - $\Delta S_{\text{ext}}$ is the number of external shares to burn,
 - The corresponding ether amount to remove from external balance is:
 
@@ -67,13 +69,12 @@ $$
 \text{externalBalance}_{\text{new}} = \text{externalBalance}_{\text{old}} - \Delta ETH_{\text{ext, burn}}.
 $$
 
-
 ### stETH token rebase
 
 The total pooled ether (`totalPooledEther`) considering the external balance is:
 
 $$
-\text{totalPooledEther} = \text{bufferedEther} + \text{CL\_balance} + \text{transientBalance} + \text{externalBalance}.
+\text{totalPooledEther} = \text{bufferedEther} + \text{CLbalance} + \text{transientBalance} + \text{externalBalance}.
 $$
 
 The share rate is defined as:
