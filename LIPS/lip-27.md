@@ -3,9 +3,9 @@ lip: 27
 title: Ensuring Compatibility with Ethereum’s Pectra Upgrade
 status: Work in Progress
 author: George Avsetsin
-discussions-to:
+discussions-to: TBA
 created: 2024-12-16
-updated: 2024-12-20
+updated: 2025-01-20
 ---
 
 # Ensuring Compatibility with Ethereum’s Pectra Upgrade
@@ -65,9 +65,9 @@ For the off-chain components of the Accounting, Validator Exit Bus, and CSM orac
 
 For the Oracle Report Sanity Checker, it is proposed to update the following parameters:
 
-- `exitedValidatorsPerDayLimit`: from 9000 to 3600;
-- `appearedValidatorsPerDayLimit`: from 43200 to 1800;
-- `initialSlashingAmountPWei`: from 1000 to 8.
+- `exitedValidatorsPerDayLimit`: from `9000` to `3600`;
+- `appearedValidatorsPerDayLimit`: from `43200` to `1800`;
+- `initialSlashingAmountPWei`: from `1000` to `8`.
 
 For the CS Verifier contract, it is proposed to:
 
@@ -94,15 +94,53 @@ The changes introduced in Pectra impact various components of the oracles. Most 
 
 ##### Transient Balance
 
-The changes announced in [EIP-6110](https://eips.ethereum.org/EIPS/eip-6110) and [EIP-7251](https://eips.ethereum.org/EIPS/eip-7251) affect the time ETH remains in the transient state in the Lido protocol.
+The changes announced in [EIP-6110](https://eips.ethereum.org/EIPS/eip-6110) and [EIP-7251](https://eips.ethereum.org/EIPS/eip-7251) affect the duration ETH remains in a transient state within the Lido protocol. Transient balance refers to the balance of validators that have been deposited but not yet added to the registry on the consensus layer. The transient balance is calculated as `(DEPOSITED_VALIDATORS - CL_VALIDATORS) * DEPOSIT_SIZE`, where:
 
-_Before Pectra_, deposited validators are added to the registry on the consensus layer in [~14.8 hours](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#process-deposit) (`ETH1_FOLLOW_DISTANCE` + `EPOCHS_PER_ETH1_VOTING_PERIOD`). They are then reported by the Accounting Oracle in the nearest frame without waiting for the activation queue. Deposited but not yet registered validators are considered transient, and their balance is calculated as `(DEPOSITED_VALIDATORS - CL_VALIDATORS) * DEPOSIT_SIZE`.
+- `DEPOSITED_VALIDATORS` is the total number of validators deposited in the Lido protocol,
+- `CL_VALIDATORS` is the total number of validators in the registry as reported by the Accounting Oracle,
+- `DEPOSIT_SIZE` is the amount of ETH deposited by each validator.
 
-_After Pectra_, validators will be added to the registry after passing through the `pending_deposits` queue and the finalization of the block with the deposit transaction. This changes the time ETH remains in a transient state from almost constant to dynamic, depending on the volume of ETH in the `pending_deposits` queue.
+_Before Pectra_, deposited validators are added to the registry on the consensus layer in [~14.8 hours](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#process-deposit) (`ETH1_FOLLOW_DISTANCE` + `EPOCHS_PER_ETH1_VOTING_PERIOD`).
 
-_It is proposed to keep the logic of reporting the balance on the consensus layer unchanged, except for the transition period, which is considered in the next section_.
+```mermaid
+gantt
+  title Before Pectra: Eth1 bridge deposit processing
+  dateFormat HH:mm
+  axisFormat %
+  todayMarker off
+  tickInterval 12month
 
-== TODO: alternative considered solutions ==
+  section EL
+  Deposit transaction             : milestone, m1, 00:00, 0m
+  ETH1_FOLLOW_DISTANCE            : 8h
+
+  section CL
+  EPOCHS_PER_ETH1_VOTING_PERIOD   : 6.8h
+  Validator added to the registry : milestone, m2
+```
+
+_After Pectra_, validators are added to the registry after passing through the `pending_deposits` queue and the finalization of the block with the deposit transaction.
+
+```mermaid
+gantt
+  title After Pectra: Deposit request processing
+  dateFormat HH:mm
+  axisFormat %
+  todayMarker off
+  tickInterval 12month
+
+  section EL
+  Deposit transaction             : milestone, m1, 00:00, 0m
+
+  section CL
+  Slot finalization               : after m1, 13m
+  Pending deposit queue           : pd, after m1, 4h
+  Validator added to the registry : milestone, m2
+```
+
+The new deposit processing mechanism changes the time ETH remains in a transient state within the Lido protocol from almost constant to dynamic, depending on the volume of ETH in the `pending_deposits` queue.
+
+_It is proposed to keep the logic of reporting the balance on the consensus layer unchanged, except for the migration period, which is considered in the next section_.
 
 ##### Deposit Mechanism Migration
 
@@ -111,6 +149,19 @@ _It is proposed to keep the logic of reporting the balance on the consensus laye
 During the Electra fork activation, the balance of validators that have not yet been activated (`validator.activation_epoch == FAR_FUTURE_EPOCH`) will be [moved to the `pending_deposits`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#upgrading-the-state). Deposits made before the fork activation but not yet processed will be handled by the former Eth1 bridge deposits mechanism but with [modified logic](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-apply_deposit) – validators will be added to the registry with a balance of 0, and the deposits themselves will be placed to the `pending_deposits`.
 
 This behavior affects the logic of accounting for the total pooled ether in the Lido protocol. The Accounting Oracle reports the total number of validators in any status on the consensus layer and their total balance. Validators that are deposited but not yet registered on the consensus layer are accounted for as transient `DEPOSITED_VALIDATORS - CL_VALIDATORS` with a constant value of `DEPOSIT_SIZE` ETH. Validators present in the registry with a zero balance but with deposits in `pending_deposits` will not be considered transient and will be included in the total number of validators on the consensus layer, with their balance counted as zero. This situation will be perceived by the protocol as a loss, as the ETH in `pending_deposits` will not be accounted for.
+
+```mermaid
+gantt
+  title Affected deposits
+  dateFormat HH:mm
+  axisFormat %
+  todayMarker off
+  tickInterval 12month
+
+  Electra activation      : milestone, 14:48, 0m
+  ETH1_FOLLOW_DISTANCE + EPOCHS_PER_ETH1_VOTING_PERIOD : 00:00, 14.8h
+  First affected deposit  : milestone, 00:00, 0m
+```
 
 To address this issue, _it is proposed to account for Eth1 bridge deposits in the `pending_deposits` queue for non-activated validators with a zero balance in the total balance of Lido validators on the consensus layer_. It is expected that validators meeting these conditions can only appear after the Electra fork activation during the migration period to deposit requests. In the next release of the Accounting Oracle, this additional condition should be removed.
 
