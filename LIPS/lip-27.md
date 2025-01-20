@@ -103,6 +103,12 @@ The changes announced in [EIP-6110](https://eips.ethereum.org/EIPS/eip-6110) and
 _Before Pectra_, deposited validators are added to the registry on the consensus layer in [~14.8 hours](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#process-deposit) (`ETH1_FOLLOW_DISTANCE` + `EPOCHS_PER_ETH1_VOTING_PERIOD`).
 
 ```mermaid
+---
+config:
+  gantt:
+    useWidth: 600
+    useMaxWidth: false
+---
 gantt
   title Before Pectra: Eth1 bridge deposit processing
   dateFormat HH:mm
@@ -122,6 +128,12 @@ gantt
 _After Pectra_, validators are added to the registry after passing through the `pending_deposits` queue and the finalization of the block with the deposit transaction.
 
 ```mermaid
+---
+config:
+  gantt:
+    useWidth: 600
+    useMaxWidth: false
+---
 gantt
   title After Pectra: Deposit request processing
   dateFormat HH:mm
@@ -151,6 +163,12 @@ During the Electra fork activation, the balance of validators that have not yet 
 This behavior affects the logic of accounting for the total pooled ether in the Lido protocol. The Accounting Oracle reports the total number of validators in any status on the consensus layer and their total balance. Validators that are deposited but not yet registered on the consensus layer are accounted for as transient `DEPOSITED_VALIDATORS - CL_VALIDATORS` with a constant value of `DEPOSIT_SIZE` ETH. Validators present in the registry with a zero balance but with deposits in `pending_deposits` will not be considered transient and will be included in the total number of validators on the consensus layer, with their balance counted as zero. This situation will be perceived by the protocol as a loss, as the ETH in `pending_deposits` will not be accounted for.
 
 ```mermaid
+---
+config:
+  gantt:
+    useWidth: 600
+    useMaxWidth: false
+---
 gantt
   title Affected deposits
   dateFormat HH:mm
