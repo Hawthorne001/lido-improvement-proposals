@@ -192,6 +192,7 @@ _It is proposed to update the algorithm for predicting the time required for a v
 The following assumptions are made:
 
 - The time required for a validator to become fully withdrawn after reaching the `withdrawable_epoch` is, on average, equal to half the time required to process all validators in a sweep cycle;
+- Blocks are not missed, so each slot has a block with a payload;
 - All `pending_partial_withdrawals` have reached the `withdrawable_epoch` and do not have any processing delays;
 - All `pending_partial_withdrawals` are executed before full and partial withdrawals, and the result is immediately reflected in the validators' balances;
 - The limit `MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP` is never reached.
@@ -330,38 +331,50 @@ def predict_withdrawals_number_in_sweep_cycle(state: BeaconState) -> int:
   - All pending_partial_withdrawals are executed before full and partial withdrawals, and the result is immediately reflected in the validators' balances;
   - The limit MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP is never reached.
   """
-  pending_partials_withdrawals = get_pending_partials_withdrawals(state)
-  validators_withdrawals = get_validators_withdrawals(state, pending_partials_withdrawals)
+  pending_partial_withdrawals = get_pending_partial_withdrawals(state)
+  validators_withdrawals = get_validators_withdrawals(state, pending_partial_withdrawals)
 
-  pending_partials_withdrawals_number = len(pending_partials_withdrawals)
+  pending_partial_withdrawals_number = len(pending_partial_withdrawals)
   validators_withdrawals_number = len(validators_withdrawals)
 
   # Each payload can have no more than MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP pending partials out of MAX_WITHDRAWALS_PER_PAYLOAD
   # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
   #
   #
-  # No partials:   [0 1 2 3], [4 5 6 7], [8 9 0 1]
-  #                         ^                         ^ cycle
-  # With partials: [p p 0 1], [p p 2 3], [p p 4 5], [p p 6 7], [p p 8 9], [p p 0 1]
+  # No partials:   [0 1 2 3], [4 5 6 7], [8 9 0 1], ...
+  #                 ^                         ^ cycle
+  # With partials: [p p 0 1], [p p 2 3], [p p 4 5], [p p 6 7], [p p 8 9], [p p 0 1], ...
   #                     ^                                                      ^ cycle
   # [ ] - payload
   # 0-9 - index of validator being withdrawn
   #   p - pending partial withdrawal
   #
-  # Thus, the number of pending partial withdrawals in the cycle is limited to
-  # MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP / MAX_WITHDRAWALS_PER_PAYLOAD * validators_withdrawals_number
+  # Thus, the ratio of the maximum number of `pending_partial_withdrawals` to the remaining number
+  # of `validators_withdrawals` in a single payload is calculated as:
+  #
+  # pending_partial_withdrawals                  MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP
+  # ---------------------------- = ------------------------------------------------------------------------
+  #    validators_withdrawals      MAX_WITHDRAWALS_PER_PAYLOAD - MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP
 
-  partial_withdrawals_max_ratio = MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP / MAX_WITHDRAWALS_PER_PAYLOAD
+  partial_withdrawals_max_ratio = (
+    MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP /
+    (MAX_WITHDRAWALS_PER_PAYLOAD - MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP)
+  )
+
   pending_partial_withdrawals_max_number_in_cycle = validators_withdrawals_number * partial_withdrawals_max_ratio
 
-  pending_partials_withdrawals_number_in_cycle = min(pending_partials_withdrawals_number, pending_partial_withdrawals_max_number_in_cycle)
-  withdrawals = validators_withdrawals_number + pending_partials_withdrawals_number_in_cycle
+  pending_partial_withdrawals_number_in_cycle = min(
+    pending_partial_withdrawals_number,
+    pending_partial_withdrawals_max_number_in_cycle
+  )
 
-  return withdrawals
+  withdrawals_number = validators_withdrawals_number + pending_partial_withdrawals_number_in_cycle
+
+  return withdrawals_number
 ```
 
 ```python
-def get_pending_partials_withdrawals(state: BeaconState) -> List[Withdrawal]:
+def get_pending_partial_withdrawals(state: BeaconState) -> List[Withdrawal]:
   """
   This method returns withdrawals that can be performed from `state.pending_partial_withdrawals`
   https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
