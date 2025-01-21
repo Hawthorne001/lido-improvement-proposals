@@ -328,7 +328,8 @@ def predict_withdrawals_number_in_sweep_cycle(state: BeaconState) -> int:
 
   The prediction is based on the following assumptions:
   - All pending_partial_withdrawals have reached withdrawable_epoch and do not have any processing delays;
-  - All pending_partial_withdrawals are executed before full and partial withdrawals, and the result is immediately reflected in the validators' balances;
+  - All pending_partial_withdrawals are executed before full and partial withdrawals, and the result
+    is immediately reflected in the validators' balances;
   - The limit MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP is never reached.
   """
   pending_partial_withdrawals = get_pending_partial_withdrawals(state)
@@ -337,7 +338,8 @@ def predict_withdrawals_number_in_sweep_cycle(state: BeaconState) -> int:
   pending_partial_withdrawals_number = len(pending_partial_withdrawals)
   validators_withdrawals_number = len(validators_withdrawals)
 
-  # Each payload can have no more than MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP pending partials out of MAX_WITHDRAWALS_PER_PAYLOAD
+  # Each payload can have no more than MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP
+  # pending partials out of MAX_WITHDRAWALS_PER_PAYLOAD
   # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
   #
   #
@@ -525,10 +527,17 @@ It is proposed to update the following parameters in the Oracle Report Sanity Ch
 The current value of `exitedValidatorsPerDayLimit` = `9000` is [calculated](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612#p-18113-exitedvalidatorsperdaylimit-9000-5) based on the maximum possible churn limit that could be reached over two years. In Electra, a limit [`MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle) is introduced on the amount of ETH that can be exited per epoch. Therefore, the maximum number of validators that can exit the network per day can be simplified and calculated as:
 
 ```python
-SLOTS_PER_EPOCH = 32 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters
-SECONDS_PER_SLOT = 12 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters-1
-EJECTION_BALANCE = 16 * 10 ** 9 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator-cycle
-MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT = 256 * 10 ** 9 # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters
+SLOTS_PER_EPOCH = 32
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters-1
+SECONDS_PER_SLOT = 12
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator-cycle
+EJECTION_BALANCE = 16 * 10 ** 9
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle
+MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT = 256 * 10 ** 9
 
 epochs_per_day = 24 * 60 * 60 / SECONDS_PER_SLOT / SLOTS_PER_EPOCH = 225
 exited_validators_per_epoch_limit = MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT / EJECTION_BALANCE = 16
@@ -538,12 +547,20 @@ exited_validators_per_day_limit = exited_validators_per_epoch_limit * epochs_per
 The current value of `appearedValidatorsPerDayLimit` = `43200` is [calculated](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612#p-18113-appearedvalidatorsperdaylimit-43200-4) based on the maximum number of deposits that can be made in a day through the Deposit Security Module, as this value is less than the network limit of `MAX_DEPOSITS * SLOTS_PER_EPOCH * 225 = 115200`. In Electra, the deposit processing mechanism changes as a result of [updates](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-apply_pending_deposit). Validators are now added to the registry after their deposit passes through the `pending_deposits` queue, which is limited by the [`MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle). Given that Lido validators are deposited exclusively with 32 ETH each, the maximum number of Lido validators that can appear on the network per day can be calculated as:
 
 ```python
-SLOTS_PER_EPOCH = 32 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters
-SECONDS_PER_SLOT = 12 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters-1
-EJECTION_BALANCE = 16 * 10 ** 9 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator-cycle
-MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT = 256 * 10 ** 9 # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters
+SLOTS_PER_EPOCH = 32
 
-DEPOSIT_SIZE = 32 * 10 ** 9 # https://github.com/lidofinance/core/blob/901c0e19b752f5ea03118d71881d8b72ccee44c0/contracts/0.8.9/BeaconChainDepositor.sol#L23
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters-1
+SECONDS_PER_SLOT = 12
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator-cycle
+EJECTION_BALANCE = 16 * 10 ** 9
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle
+MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT = 256 * 10 ** 9
+
+# https://github.com/lidofinance/core/blob/901c0e19b752f5ea03118d71881d8b72ccee44c0/contracts/0.8.9/BeaconChainDepositor.sol#L23
+DEPOSIT_SIZE = 32 * 10 ** 9
 
 epochs_per_day = 24 * 60 * 60 / SECONDS_PER_SLOT / SLOTS_PER_EPOCH = 225
 appeared_validators_per_epoch_limit = MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT / DEPOSIT_SIZE = 8
@@ -555,8 +572,11 @@ It is worth noting that the proposed `appearedValidatorsPerDayLimit` calculation
 The current value of `initialSlashingAmountPWei` = `1000` is calculated using the formula `MAX_EFFECTIVE_BALANCE // MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX` and corresponds to 1 ETH expressed in PWei. In Electra, `MIN_SLASHING_PENALTY_QUOTIENT_ELECTRA` increases by 128 times from `32` to `4096`, reducing the initial penalty size by 128 times. Since Lido validators exclusively use the [`ETH1_ADDRESS_WITHDRAWAL_PREFIX`](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix), their effective balance [is limited to `MIN_ACTIVATION_BALANCE`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_max_effective_balance). Therefore, the maximum initial slashing penalty is calculated as:
 
 ```python
-MIN_ACTIVATION_BALANCE = 32 * 10 ** 9 # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
-MIN_SLASHING_PENALTY_QUOTIENT_ELECTRA = 4096 # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#rewards-and-penalties
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
+MIN_ACTIVATION_BALANCE = 32 * 10 ** 9
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#rewards-and-penalties
+MIN_SLASHING_PENALTY_QUOTIENT_ELECTRA = 4096
 
 initial_slashing_amount_gwei = MIN_ACTIVATION_BALANCE / MIN_SLASHING_PENALTY_QUOTIENT_ELECTRA = 0.0078125
 initial_slashing_amount_pwei = initial_slashing_amount * 10 ** 3 = 7.8125 # ~8
@@ -581,8 +601,11 @@ Thus, it's proposed to remove the initial slashing penalty report from the CS Ve
 It is important to note that the proposed solution carries additional risk in the period between the contract upgrade and the hardfork activation. In the event of mass slashing in the module, compensation for the initial slashing penalty received by validators will be delayed until the validator's full withdrawal (at least [`EPOCHS_PER_SLASHINGS_VECTOR`](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#state-list-lengths) ~36 days). A catastrophic scenario, assuming the module reaches its limit and all validators in the module are slashed during the considered period, would lead to a temporary loss of 0.0625% of TVL (6,000 ETH out of 9,600,000 ETH TVL at the time of writing this LIP) until the corresponding amount of stETH shares is burned upon validators withdrawal.
 
 ```python
-max_module_share = 0.02 # 2% as it proposed in https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x7cbd5e9cb95bda9581831daf8b0e72d1ad0b068d2cbd3bda2a2f6ae378464f26
-MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX = 32 # https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#updated-penalty-values
+# 2% as it proposed in https://snapshot.org/#/s:lido-snapshot.eth/proposal/0x7cbd5e9cb95bda9581831daf8b0e72d1ad0b068d2cbd3bda2a2f6ae378464f26
+max_module_share = 0.02
+
+# https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#updated-penalty-values
+MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX = 32
 
 validator_losses_ratio = 1 / MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX = 0.03125 # initial slashing penalty per 1 validator
 protocol_max_losses_ratio = max_module_share * losses_portion_per_validator = 0.02 * 1 / 32 = 0.000625 # 0.0625 %
@@ -616,7 +639,8 @@ contract ICSVerifier {
 It is proposed to redeploy the contract with two sets of gIndexes: one for the current (Deneb) fork version and one for the Electra fork version, and a specific slot number for the hardfork activation.
 
 ```solidity
-// gIndexes calculation: https://github.com/lidofinance/community-staking-module/blob/4d5f4700e356dc502c484456fbf924cba56206ad/script/gindex.mjs#L36
+// gIndexes calculation:
+// https://github.com/lidofinance/community-staking-module/blob/4d5f4700e356dc502c484456fbf924cba56206ad/script/gindex.mjs#L36
 
 GI_FIRST_WITHDRAWAL_PREV = 0x0000000000000000000000000000000000000000000000000000000000e1c004;
 GI_FIRST_WITHDRAWAL_CURR = 0x000000000000000000000000000000000000000000000000000000000161c004;
@@ -627,8 +651,11 @@ GI_FIRST_VALIDATOR_CURR = 0x0000000000000000000000000000000000000000000000000096
 GI_HISTORICAL_SUMMARIES_PREV = 0x0000000000000000000000000000000000000000000000000000000000003b00;
 GI_HISTORICAL_SUMMARIES_CURR = 0x0000000000000000000000000000000000000000000000000000000000005b00;
 
-FIRST_SUPPORTED_SLOT = 8626176; // The first slot of the Deneb activation epoch https://eips.ethereum.org/EIPS/eip-7569#activation
-PIVOT_SLOT = // TBA, first slot of the Electra activation epoch
+// The first slot of the Deneb activation epoch https://eips.ethereum.org/EIPS/eip-7569#activation
+FIRST_SUPPORTED_SLOT = 8626176;
+
+// TBA, first slot of the Electra activation epoch
+PIVOT_SLOT =
 ```
 
 ## Links
