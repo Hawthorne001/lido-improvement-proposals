@@ -633,9 +633,23 @@ PIVOT_SLOT = // TBA, first slot of the Electra activation epoch
 
 ## Links
 
-- [Electra specification](https://github.com/ethereum/consensus-specs/tree/dev/specs/electra)
-
-==TODO==
+- [Electra consensus specification](https://github.com/ethereum/consensus-specs/tree/dev/specs/electra)
+- [EIP-7600: Hardfork meta - Pectra](https://eips.ethereum.org/EIPS/eip-7600)
+  - [EIP-6110: Supply validator deposits on chain](https://eips.ethereum.org/EIPS/eip-6110)
+  - [EIP-7002: Execution layer triggerable withdrawals](https://eips.ethereum.org/EIPS/eip-7002)
+  - [EIP-7251: Increase the `MAX_EFFECTIVE_BALANCE`](https://eips.ethereum.org/EIPS/eip-7251)
+  - [EIP-7549: Move committee index outside Attestation](https://eips.ethereum.org/EIPS/eip-7549)
+- [Eth Beacon node API](https://ethereum.github.io/beacon-APIs/)
+- Oracles documentation
+  - [Basic flow](https://docs.lido.fi/guides/oracle-operator-manual#intro)
+  - [Accounting Oracle](https://docs.lido.fi/guides/oracle-spec/accounting-oracle)
+  - [Validators Exit Bus Oracle](https://docs.lido.fi/guides/oracle-spec/validator-exit-bus)
+  - [CS Perofrmance Oracle](https://docs.lido.fi/staking-modules/csm/rewards#performance-oracle)
+  - [Accounting Oracle contract](https://docs.lido.fi/contracts/accounting-oracle)
+  - [Validators Exit Bus Oracle contract](https://docs.lido.fi/contracts/validators-exit-bus-oracle)
+  - [Hash Consensus contract](https://docs.lido.fi/contracts/validators-exit-bus-oracle)
+  - [CS Verifier contract](https://docs.lido.fi/staking-modules/csm/contracts/CSVerifier)
+  - [Oracle Report Sanity Checker contract](https://docs.lido.fi/contracts/oracle-report-sanity-checker)
 
 ## Copyright
 
