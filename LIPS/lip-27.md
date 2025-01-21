@@ -185,7 +185,18 @@ To address this issue, _it is proposed to account for Eth1 bridge deposits in th
 
 ##### Withdrawals Processing Time Prediction
 
-==TODO==
+[EIP-7251](https://eips.ethereum.org/EIPS/eip-7251) introduces changes to the [withdrawals processing mechanism](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals) in the Ethereum protocol. The changes affect the algorithm in the Validator Exit Bus Oracle for predicting the time required for a validator to become fully withdrawn after reaching the `withdrawable_epoch`.
+
+_It is proposed to update the algorithm for predicting the time required for a validator to become fully withdrawn, reflecting the processing of `pending_partial_withdrawals` added in [EIP-7251](https://eips.ethereum.org/EIPS/eip-7251)_.
+
+The following assumptions are made:
+
+- The time required for a validator to become fully withdrawn after reaching the `withdrawable_epoch` is, on average, equal to half the time required to process all validators in a sweep cycle;
+- All `pending_partial_withdrawals` have reached the `withdrawable_epoch` and do not have any processing delays;
+- All `pending_partial_withdrawals` are executed before full and partial withdrawals, and the result is immediately reflected in the validators' balances;
+- The limit `MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP` is never reached.
+
+These assumptions simplify the implementation and ensure that the algorithm remains efficient and straightforward. Although these assumptions may not always hold true in every scenario, they provide a reasonable approximation for the average case.
 
 ##### Bunker Mode and The Correlated Penalty
 
@@ -293,7 +304,123 @@ def sum_pending_deposit_requests_for_validator(state: BeaconState, validator: Va
 
 ##### Withdrawals Processing Time Prediction
 
-==TODO==
+It is proposed to change the logic for predicting the time required for a validator to become fully withdrawn after reaching the `withdrawable_epoch`, reflecting the processing of `pending_partial_withdrawals` added in [EIP-7251](https://eips.ethereum.org/EIPS/eip-7251).
+
+```python
+def predict_average_withdrawal_delay_in_epochs(state: BeaconState) -> int:
+  """
+  This method predicts the average withdrawal delay in epochs.
+  It is assumed that on average, a validator sweep is achieved in half the time of a full sweep cycle.
+  """
+
+  withdrawals_number_in_sweep_cycle = predict_withdrawals_number_in_sweep_cycle(state)
+  full_sweep_cycle_in_epochs = withdrawals_number_in_sweep_cycle / MAX_WITHDRAWALS_PER_PAYLOAD / SLOTS_PER_EPOCH
+
+  return full_sweep_cycle_in_epochs // 2
+```
+
+```python
+def predict_withdrawals_number_in_sweep_cycle(state: BeaconState) -> int:
+  """
+  This method predicts the number of withdrawals that can be performed in a single sweep cycle.
+  https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
+
+  The prediction is based on the following assumptions:
+  - All pending_partial_withdrawals have reached withdrawable_epoch and do not have any processing delays;
+  - All pending_partial_withdrawals are executed before full and partial withdrawals, and the result is immediately reflected in the validators' balances;
+  - The limit MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP is never reached.
+  """
+  pending_partials_withdrawals = get_pending_partials_withdrawals(state)
+  validators_withdrawals = get_validators_withdrawals(state, pending_partials_withdrawals)
+
+  pending_partials_withdrawals_number = len(pending_partials_withdrawals)
+  validators_withdrawals_number = len(validators_withdrawals)
+
+  # Each payload can have no more than MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP pending partials out of MAX_WITHDRAWALS_PER_PAYLOAD
+  # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
+  #
+  #
+  # No partials:   [0 1 2 3], [4 5 6 7], [8 9 0 1]
+  #                         ^                         ^ cycle
+  # With partials: [p p 0 1], [p p 2 3], [p p 4 5], [p p 6 7], [p p 8 9], [p p 0 1]
+  #                     ^                                                      ^ cycle
+  # [ ] - payload
+  # 0-9 - index of validator being withdrawn
+  #   p - pending partial withdrawal
+  #
+  # Thus, the number of pending partial withdrawals in the cycle is limited to
+  # MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP / MAX_WITHDRAWALS_PER_PAYLOAD * validators_withdrawals_number
+
+  partial_withdrawals_max_ratio = MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP / MAX_WITHDRAWALS_PER_PAYLOAD
+  pending_partial_withdrawals_max_number_in_cycle = validators_withdrawals_number * partial_withdrawals_max_ratio
+
+  pending_partials_withdrawals_number_in_cycle = min(pending_partials_withdrawals_number, pending_partial_withdrawals_max_number_in_cycle)
+  withdrawals = validators_withdrawals_number + pending_partials_withdrawals_number_in_cycle
+
+  return withdrawals
+```
+
+```python
+def get_pending_partials_withdrawals(state: BeaconState) -> List[Withdrawal]:
+  """
+  This method returns withdrawals that can be performed from `state.pending_partial_withdrawals`
+  https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
+  """
+  withdrawals: List[Withdrawal] = []
+
+  for withdrawal in state.pending_partial_withdrawals:
+    # if withdrawal.withdrawable_epoch > epoch or len(withdrawals) == MAX_PENDING_PARTIALS_PER_WITHDRAWALS_SWEEP:
+    #     break
+    #
+    # These checks from the original method are omitted. It is assumed that `withdrawable_epoch`
+    # has arrived for all `pending_partial_withdrawals`
+
+    validator = state.validators[withdrawal.validator_index]
+    has_sufficient_effective_balance = validator.effective_balance >= MIN_ACTIVATION_BALANCE
+    has_excess_balance = state.balances[withdrawal.validator_index] > MIN_ACTIVATION_BALANCE
+
+    if validator.exit_epoch == FAR_FUTURE_EPOCH and has_sufficient_effective_balance and has_excess_balance:
+      withdrawable_balance = min(
+        state.balances[withdrawal.validator_index] - MIN_ACTIVATION_BALANCE,
+        withdrawal.amount
+      )
+      withdrawals.append(Withdrawal(
+        validator_index=withdrawal.validator_index,
+        amount=withdrawable_balance,
+      ))
+
+  return withdrawals
+```
+
+```python
+def get_validators_withdrawals(state: BeaconState, partial_withdrawals: List[Withdrawal]) -> List[Withdrawal]:
+  """
+  This method returns fully and partial withdrawals that can be performed for validators
+  https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
+  """
+  withdrawals: List[Withdrawal] = []
+  epoch = get_current_epoch(state)
+
+  for validator_index, validator in enumerate(state.validators):
+    partially_withdrawn_balance = sum(
+      withdrawal.amount for withdrawal in partial_withdrawals
+      if withdrawal.validator_index == validator_index
+    )
+    balance = state.balances[validator_index] - partially_withdrawn_balance
+
+    if is_fully_withdrawable_validator(validator, balance, epoch):
+      withdrawals.append(Withdrawal(
+        validator_index=validator_index,
+        amount=balance,
+      ))
+    elif is_partially_withdrawable_validator(validator, balance):
+      withdrawals.append(Withdrawal(
+        validator_index=validator_index,
+        amount=balance - get_max_effective_balance(validator),
+      ))
+
+  return withdrawals
+```
 
 ##### The Correlated Penalty
 
@@ -309,6 +436,7 @@ It is proposed to update the churn limit calculation used in the Validator Exit 
 
 The following methods from the Electra specification will be used to calculate the churn limit in the oracle:
 
+- [`compute_exit_epoch_and_update_churn`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-compute_exit_epoch_and_update_churn)
 - [`get_balance_churn_limit`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_balance_churn_limit)
 - [`get_activation_exit_churn_limit`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_activation_exit_churn_limit)
 
@@ -362,7 +490,6 @@ Helper functions:
 - [`get_committee_indices`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_committee_indices)
 - [`get_balance_churn_limit`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_balance_churn_limit)
 - [`get_activation_exit_churn_limit`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_activation_exit_churn_limit)
-- [`compute_exit_epoch_and_update_churn`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-compute_exit_epoch_and_update_churn)
 
 ### 2. Updates to Oracle Report Sanity Checker Parameters
 
@@ -378,11 +505,11 @@ After the Pectra hardfork and after all the fromer Eth1 bridge deposits have fin
 
 It is proposed to update the following parameters in the Oracle Report Sanity Checker contract:
 
-- `exitedValidatorsPerDayLimit`: from 9000 to 3600;
-- `appearedValidatorsPerDayLimit`: from 43200 to 1800;
-- `initialSlashingAmountPWe`: from 1000 to 8.
+- `exitedValidatorsPerDayLimit`: from `9000` to `3600`;
+- `appearedValidatorsPerDayLimit`: from `43200` to `1800`;
+- `initialSlashingAmountPWe`: from `1000` to `8`.
 
-The current value of `exitedValidatorsPerDayLimit` = 9000 is [calculated](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612#p-18113-exitedvalidatorsperdaylimit-9000-5) based on the maximum possible churn limit that could be reached over two years. In Electra, a limit [`MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle) is introduced on the amount of ETH that can be exited per epoch. Therefore, the maximum number of validators that can exit the network per day can be simplified and calculated as:
+The current value of `exitedValidatorsPerDayLimit` = `9000` is [calculated](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612#p-18113-exitedvalidatorsperdaylimit-9000-5) based on the maximum possible churn limit that could be reached over two years. In Electra, a limit [`MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle) is introduced on the amount of ETH that can be exited per epoch. Therefore, the maximum number of validators that can exit the network per day can be simplified and calculated as:
 
 ```python
 SLOTS_PER_EPOCH = 32 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters
@@ -395,7 +522,7 @@ exited_validators_per_epoch_limit = MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT / 
 exited_validators_per_day_limit = exited_validators_per_epoch_limit * epochs_per_day = 3600
 ```
 
-The current value of `appearedValidatorsPerDayLimit` = 43200 is [calculated](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612#p-18113-appearedvalidatorsperdaylimit-43200-4) based on the maximum number of deposits that can be made in a day through the Deposit Security Module, as this value is less than the network limit of `MAX_DEPOSITS * SLOTS_PER_EPOCH * 225 = 115200`. In Electra, the deposit processing mechanism changes as a result of [updates](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-apply_pending_deposit). Validators are now added to the registry after their deposit passes through the `pending_deposits` queue, which is limited by the [`MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle). Given that Lido validators are deposited exclusively with 32 ETH each, the maximum number of Lido validators that can appear on the network per day can be calculated as:
+The current value of `appearedValidatorsPerDayLimit` = `43200` is [calculated](https://research.lido.fi/t/staking-router-community-staking-module-upgrade-announcement/8612#p-18113-appearedvalidatorsperdaylimit-43200-4) based on the maximum number of deposits that can be made in a day through the Deposit Security Module, as this value is less than the network limit of `MAX_DEPOSITS * SLOTS_PER_EPOCH * 225 = 115200`. In Electra, the deposit processing mechanism changes as a result of [updates](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-apply_pending_deposit). Validators are now added to the registry after their deposit passes through the `pending_deposits` queue, which is limited by the [`MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#validator-cycle). Given that Lido validators are deposited exclusively with 32 ETH each, the maximum number of Lido validators that can appear on the network per day can be calculated as:
 
 ```python
 SLOTS_PER_EPOCH = 32 # https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#time-parameters
@@ -410,9 +537,9 @@ appeared_validators_per_epoch_limit = MAX_PER_EPOCH_ACTIVATION_EXIT_CHURN_LIMIT 
 appeared_validators_per_day_limit = appeared_validators_per_epoch_limit * epochs_per_day = 1800
 ```
 
-It is worth noting that the proposed `appearedValidatorsPerDayLimit` calculation logic makes sense after the former Eth1 bridge deposits mechanism completes adding all previously deposited validators to the registry, which will take `ETH1_FOLLOW_DISTANCE` + `EPOCHS_PER_ETH1_VOTING_PERIOD` = ~14.8 hours after the hardfork activation.
+It is worth noting that the proposed `appearedValidatorsPerDayLimit` calculation logic makes sense after the former Eth1 bridge deposits mechanism completes adding all previously deposited validators to the registry, which will take `ETH1_FOLLOW_DISTANCE` + `EPOCHS_PER_ETH1_VOTING_PERIOD` = `~14.8` hours after the hardfork activation.
 
-The current value of `initialSlashingAmountPWei` = 1000 is calculated using the formula `MAX_EFFECTIVE_BALANCE // MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX` and corresponds to 1 ETH expressed in PWei. In Electra, `MIN_SLASHING_PENALTY_QUOTIENT_ELECTRA` increases by 128 times from 32 to 4096, reducing the initial penalty size by 128 times. Since Lido validators exclusively use the [`ETH1_ADDRESS_WITHDRAWAL_PREFIX`](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix), their effective balance [is limited to `MIN_ACTIVATION_BALANCE`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_max_effective_balance). Therefore, the maximum initial slashing penalty is calculated as:
+The current value of `initialSlashingAmountPWei` = `1000` is calculated using the formula `MAX_EFFECTIVE_BALANCE // MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX` and corresponds to 1 ETH expressed in PWei. In Electra, `MIN_SLASHING_PENALTY_QUOTIENT_ELECTRA` increases by 128 times from `32` to `4096`, reducing the initial penalty size by 128 times. Since Lido validators exclusively use the [`ETH1_ADDRESS_WITHDRAWAL_PREFIX`](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix), their effective balance [is limited to `MIN_ACTIVATION_BALANCE`](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-get_max_effective_balance). Therefore, the maximum initial slashing penalty is calculated as:
 
 ```python
 MIN_ACTIVATION_BALANCE = 32 * 10 ** 9 # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
