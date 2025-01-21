@@ -10,7 +10,7 @@ updated: 2025-01-20
 
 # Ensuring Compatibility with Ethereum’s Pectra Upgrade
 
-## Table of Content
+## Table of Contents
 
 - [Simple Summary](#simple-summary)
 - [Abstract](#abstract)
@@ -49,7 +49,7 @@ updated: 2025-01-20
 
 ## Simple Summary
 
-This proposal outlines updates to the Lido protocol to maintain seamless operation with Ethereum’s upcoming Pectra hardfork, focusing solely on compatibility without integrating new features introduced by Pectra.
+This proposal outlines changes to the Lido protocol to ensure continuous operation with Ethereum’s upcoming Pectra hardfork, focusing exclusively on compatibility rather than integrating any new features introduced by Pectra.
 
 ## Abstract
 
@@ -72,11 +72,11 @@ For the Oracle Report Sanity Checker, it is proposed to update the following par
 For the CS Verifier contract, it is proposed to:
 
 - Remove the processing of slashing proofs;
-- Redeploy the contract with Electra activation slot and two sets of gIndexes: for Deneb and Electra.
+- Redeploy the contract with the Electra activation slot and two sets of gIndexes for Deneb and Electra.
 
 ## Motivation
 
-The Pectra upgrade introduces changes to the Ethereum protocol specifications that directly impact components of the Lido protocol. Specifically, these changes affect the algorithms of the Accounting, Validator Exit Bus, and CSM oracles, limits in the Oracle Report Sanity Checker contract, slashing penalty and gIndexes in CSVerifier contract. To ensure the Lido protocol continues to operate accurately and reliably, the affected oracle algorithms, Oracle Report Sanity Checker limits and CS Verifier must be reviewed and updated in accordance with the new Ethereum protocol specifications.
+The Pectra upgrade introduces changes to the Ethereum protocol specifications that directly impact components of the Lido protocol. Specifically, these changes affect the algorithms of the Accounting, Validator Exit Bus, and CSM oracles, the limits in the Oracle Report Sanity Checker contract, the slashing penalty, and the gIndexes in the CS Verifier contract. To ensure the Lido protocol continues to operate accurately and reliably, the affected oracle algorithms, Oracle Report Sanity Checker limits, and the CS Verifier must be reviewed and updated in accordance with the new Ethereum protocol specifications.
 
 ## Specification
 
@@ -84,13 +84,13 @@ The Pectra upgrade introduces changes to the Ethereum protocol specifications th
 
 #### Overview
 
-New versions of the off-chain oracles are proposed, featuring updated algorithms for the Accounting, Validator Exit Bus, and CSM oracles to ensure compatibility with the changes introduced by the Pectra hardfork. To minimize disruption, the implementation will include both the current and updated algorithms, with the latter activated after the Pectra hardfork goes live on the network.
+New versions of the off-chain oracles are proposed, featuring updated algorithms for the Accounting, Validator Exit Bus, and CSM oracles to ensure compatibility with changes introduced by the Pectra hardfork. To minimize disruption, the implementation will include both the current and the updated algorithms, with the latter activated after the Pectra hardfork goes live on the network.
 
 The oracle contracts will use an updated [consensus version](https://docs.lido.fi/contracts/accounting-oracle#getconsensusversion) to signal off-chain oracle instances which algorithm to apply for report collection. It is proposed that the updated algorithm be activated via an on-chain vote prior to the hardfork. This vote will increment the consensus version parameter. Once the Pectra hardfork is activated on the network, the updated algorithm will automatically take effect and be used for report building.
 
 #### Rationale
 
-The changes introduced in Pectra impact various components of the oracles. Most of these changes directly rely on the consensus layer specification or even replicate certain methods from it. These updates are straightforward and strictly adhere to the Ethereum specification. Other changes are less obvious, and their design rationale is described in this section.
+Most changes introduced by Pectra directly rely on the consensus layer specification or replicate certain methods from it. These updates are straightforward and strictly adhere to the Ethereum specification. Other changes are more subtle and are explained in this section.
 
 ##### Transient Balance
 
@@ -508,7 +508,7 @@ Helper functions:
 
 #### Overview
 
-After the Pectra hardfork and after all the fromer Eth1 bridge deposits have finished processing, it is proposed to reduce `exitedValidatorsPerDayLimit`, `appearedValidatorsPerDayLimit`, and `initialSlashingAmountPWei` limits in the Oracle Report Sanity Checker contract.
+After the Pectra hardfork and once all the former Eth1 bridge deposits have finished processing, it is proposed to reduce the `exitedValidatorsPerDayLimit`, `appearedValidatorsPerDayLimit`, and `initialSlashingAmountPWei` limits in the Oracle Report Sanity Checker contract.
 
 #### Rationale
 
