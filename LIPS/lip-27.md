@@ -677,6 +677,7 @@ PIVOT_SLOT =
   - [Hash Consensus contract](https://docs.lido.fi/contracts/validators-exit-bus-oracle)
   - [CS Verifier contract](https://docs.lido.fi/staking-modules/csm/contracts/CSVerifier)
   - [Oracle Report Sanity Checker contract](https://docs.lido.fi/contracts/oracle-report-sanity-checker)
+- [Capella vs Electra Bunker mode scenarios](https://docs.google.com/document/d/10NrRHPOXEjP1gZ78XQ6MP09k57SljmsdbAqkZSKAAuw/edit?usp=sharing)
 
 ## Copyright
 
