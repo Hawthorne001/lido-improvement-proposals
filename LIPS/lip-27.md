@@ -263,11 +263,13 @@ def get_lido_cl_total_balance(state: BeaconState, lido_validators: List[Validato
       # - Eth1 bridge deposits:  https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-apply_deposit
       # - Excess active balance: https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-queue_excess_active_balance
       #
-      # Deposits that are an excess active balance cannot exist for a non activated validator
+      # For a NON ACTIVATED validator, there couldn't be any deposits that are excess ACTIVE balance.
+      # So for this validator, there could be only two types of deposits: deposit requests and Eth1 bridge deposits.
 
-      deposits_amount = sum_pending_deposits_for_validator(state, validator)
+      all_deposits_amount = sum_pending_deposits_for_validator(state, validator)
       deposit_requests_amount = sum_pending_deposit_requests_for_validator(state, validator)
-      eth1_bridge_deposits_amount = deposits_amount - deposit_requests_amount
+      excess_active_balance_amount = 0
+      eth1_bridge_deposits_amount = all_deposits_amount - deposit_requests_amount - excess_active_balance_amount
 
       assert eth1_bridge_deposits_amount >= 0
 
