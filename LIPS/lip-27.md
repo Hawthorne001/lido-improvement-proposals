@@ -181,7 +181,46 @@ gantt
   First affected deposit  : milestone, 00:00, 0m
 ```
 
-To address this issue, _it is proposed to account for Eth1 bridge deposits in the `pending_deposits` queue for non-activated validators with a zero balance in the total balance of Lido validators on the consensus layer_. It is expected that validators meeting these conditions can only appear after the Electra fork activation during the migration period to deposit requests. In the next release of the Accounting Oracle, this additional condition should be removed.
+While the specification guarantees that the order of validators in the registry will match the order of deposits in the deposit contract, it does not guarantee the order of deposited ETH appearing in the validator's balance during migration. A deposit request made shortly after the Electra activation [may be processed](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_pending_deposits) before a deposit made shortly before the activation but processed with a delay. The scenario below illustrates this. Two deposits are made for a single validator before and after the hardfork. The validator is added to the registry in the order of deposits on the execution layer, but the order of balance changes for the validator on the consensus layer occurs in reverse.
+
+```mermaid
+---
+config:
+  gantt:
+    useWidth: 600
+    useMaxWidth: false
+---
+gantt
+  title Deposit processing order
+  dateFormat HH:mm
+  axisFormat %
+  todayMarker off
+  tickInterval 12month
+
+  section Chain
+  Electra activated                      : milestone, 10:00, 0m
+  All Eth1 bridge deposits processed     : milestone, 16:00, 0m
+
+  section Eth1 bridge
+  Eth1 Deposit transaction               : milestone, 00:00, 0m
+  ETH1_FOLLOW_DISTANCE + EPOCHS_PER_ETH1_VOTING_PERIOD : 00:00, 14.8h
+  Validator added to registry with 0 ETH : milestone, 0m
+  Deposit added to pending_deposits      : milestone, 0m
+  Rest Eth1 bridge deposits processing   : 1.2h
+  Pending deposits queue                 : active, 16:00, 2h
+  Deposit applyed to the validator       : milestone, done, 0m
+
+  section Deposit request
+  Deposit transaction                    : milestone, 12:00, 0m
+  Deposit added to pending_deposits      : milestone, 0m
+  Rest Eth1 bridge deposits processing   : 4h
+  Pending deposits queue                 : active, 20m
+  Deposit applyed to the validator       : milestone, done, 0m
+```
+
+Thus, it is necessary to identify Lido validators that have been added to the registry but do not have ETH in their balance and account for the balance of such validators in the `pending_deposits` queue in the total balance of Lido validators on the consensus layer. It should be noted that a deposit can be made to a validator by anyone, which may be processed before the application of the Lido deposit.
+
+_It is proposed to account for Eth1 bridge deposits in the `pending_deposits` queue for non-activated validators with an unexpected balance (less than `LIDO_DEPOSIT_AMOUNT`) in the total balance of Lido validators on the consensus layer_. It is expected that validators meeting these conditions can only appear after the Electra fork activation during the migration period to deposit requests. In the next release of the Accounting Oracle, this additional condition should be removed.
 
 ##### Withdrawals Processing Time Prediction
 
@@ -236,7 +275,7 @@ def is_electra_activated(ref_slot: Slot) -> bool:
 
 ##### Deposit Mechanism Migration
 
-It is proposed to change the logic of Accounting Oracle to account for Eth1 bridge deposits in the `pending_deposits` queue for non-activated validators with a zero balance in the total balance of Lido validators on the consensus layer.
+It is proposed to change the logic of Accounting Oracle to account for Eth1 bridge deposits in the `pending_deposits` queue for non-activated validators with an unexpected balance (less than `LIDO_DEPOSIT_AMOUNT`) in the total balance of Lido validators on the consensus layer.
 
 ```python
 def get_lido_cl_total_balance(state: BeaconState, lido_validators: List[Validator]) -> Gwei:
@@ -249,14 +288,19 @@ def get_lido_cl_total_balance(state: BeaconState, lido_validators: List[Validato
     total_balance += validator.balance
 
     if (
-      # An non activated validator with a zero balance can occur in two cases:
-      # 1. A validator whose balance was moved to the pending_deposits queue during the Electra hardfork activation
-      #    https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#upgrading-the-state
-      # 2. A validator whose deposit was processed after the Electra hardfork activation through the former Eth1 bridge
-      #    https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-apply_deposit
+      # The oracle reports the number of validators in the registry and their total balance.
+      # During and shortly after the Electra fork activation, validators may be added to
+      # the registry without having ETH in their balance. The deposited ETH will be placed
+      # in the pending_deposits queue.
+      #
+      # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#upgrading-the-state
+      # https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-apply_deposit
 
-      validator.effective_balance == 0 and
-      validator.activation_epoch == FAR_FUTURE_EPOCH
+      # Validator is not activated
+      validator.activation_epoch == FAR_FUTURE_EPOCH and
+
+      # It has unexpected balance for non-activated validator
+      validator.effective_balance < LIDO_DEPOSIT_AMOUNT
     ):
       # Pending deposits may contain:
       # - Deposit requests:      https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#deposit-requests
