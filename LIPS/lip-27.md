@@ -56,7 +56,7 @@ This proposal outlines changes to the Lido protocol to ensure continuous operati
 For the off-chain components of the Accounting, Validator Exit Bus, and CSM oracles, it is proposed to:
 
 - Implement the switch to the new report collection algorithm at the time of the hardfork activation;
-- Account for Eth1 bridge deposits in the `pending_deposits` queue at the time of the hardfork activation;
+- Account for Eth1 bridge deposits in the `pending_deposits` queue at the migration period after the hardfork activation;
 - Update the sweep cycle length calculation algorithm in the Validator Exit Bus Oracle;
 - Update the calculation of the correlated penalty size in the Accounting Oracle;
 - Update the churn limit calculation in the Validator Exit Bus Oracle;
@@ -84,7 +84,7 @@ The Pectra upgrade introduces changes to the Ethereum protocol specifications th
 
 #### Overview
 
-New versions of the off-chain oracles are proposed, featuring updated algorithms for the Accounting, Validator Exit Bus, and CSM oracles to ensure compatibility with changes introduced by the Pectra hardfork. To minimize disruption, the implementation will include both the current and the updated algorithms, with the latter activated after the Pectra hardfork goes live on the network.
+New versions of the off-chain oracles are proposed, featuring updated algorithms for the Accounting, Validator Exit Bus, and CSM oracles to ensure compatibility with changes introduced by the Pectra hardfork. To avoid any disruptions, the implementation will include both the current and the updated algorithms, with the latter activated after the Pectra hardfork goes live on the network.
 
 The oracle contracts will use an updated [consensus version](https://docs.lido.fi/contracts/accounting-oracle#getconsensusversion) to signal off-chain oracle instances which algorithm to apply for report collection. It is proposed that the updated algorithm be activated via an on-chain vote prior to the hardfork. This vote will increment the consensus version parameter. Once the Pectra hardfork is activated on the network, the updated algorithm will automatically take effect and be used for report building.
 
@@ -106,7 +106,7 @@ _Before Pectra_, deposited validators are added to the registry on the consensus
 ---
 config:
   gantt:
-    useWidth: 600
+    useWidth: 640
     useMaxWidth: false
 ---
 gantt
@@ -131,7 +131,7 @@ _After Pectra_, validators are added to the registry after passing through the `
 ---
 config:
   gantt:
-    useWidth: 600
+    useWidth: 640
     useMaxWidth: false
 ---
 gantt
@@ -166,7 +166,7 @@ This behavior affects the logic of accounting for the total pooled ether in the 
 ---
 config:
   gantt:
-    useWidth: 600
+    useWidth: 640
     useMaxWidth: false
 ---
 gantt
@@ -187,7 +187,7 @@ While the specification guarantees that the order of validators in the registry 
 ---
 config:
   gantt:
-    useWidth: 600
+    useWidth: 640
     useMaxWidth: false
 ---
 gantt
@@ -369,7 +369,7 @@ def predict_average_withdrawal_delay_in_epochs(state: BeaconState) -> int:
 ```python
 def predict_withdrawals_number_in_sweep_cycle(state: BeaconState) -> int:
   """
-  This method predicts the number of withdrawals that can be performed in a single sweep cycle.
+  This method predicts the number of withdrawals that can be performed in a single next cycle.
   https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#modified-get_expected_withdrawals
 
   The prediction is based on the following assumptions:
