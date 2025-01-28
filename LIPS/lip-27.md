@@ -663,7 +663,9 @@ protocol_max_losses_ratio = max_module_share * losses_portion_per_validator = 0.
 
 The Pectra hardfork introduces changes in the consensus layer state containers, resulting in updated gIndexes required for the Beacon proofs processing.
 
-The CS Verifier contract was initially designed with a mechanism to switch gIndexes during a hardfork. The contract stores two sets of gIndexes and a slot after which the second set should be used. It is proposed to redeploy the contract after the hardfork activation epoch is confirmed and replace the current contract with the new one through an on-chain vote.
+The CS Verifier contract was initially designed with a mechanism to switch gIndexes during a hardfork. The contract stores two sets of gIndexes and a slot after which the second set should be used. The variables are stored in immutable vars to reduce storage access and cannot be updated in the current contract, but the contract can be redeployed with an updated set of variables.
+
+It is proposed to redeploy the contract after the hardfork activation epoch is confirmed and replace the current contract with the new one through an on-chain vote.
 
 #### Technical Specification
 
