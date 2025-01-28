@@ -234,7 +234,7 @@ The following assumptions are made:
 - Blocks are not missed, so each slot has a block with a payload;
 - All `pending_partial_withdrawals` have reached the `withdrawable_epoch` and do not have any processing delays;
 - All `pending_partial_withdrawals` are executed before full and partial withdrawals, and the result is immediately reflected in the validators' balances;
-- The limit `MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP` is never reached.
+- The limit `MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP` [is never reached](https://hackmd.io/@lido/HyrhJeLOJe).
 
 These assumptions simplify the implementation and ensure that the algorithm remains efficient and straightforward. Although these assumptions may not always hold true in every scenario, they provide a reasonable approximation for the average case.
 
