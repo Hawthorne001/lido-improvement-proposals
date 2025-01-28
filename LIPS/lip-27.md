@@ -273,6 +273,8 @@ def is_electra_activated(ref_slot: Slot) -> bool:
   return ref_slot >= compute_start_slot_at_epoch(ELECTRA_FORK_EPOCH)
 ```
 
+It is worth noting the Bunker mode check, which predicts the size of the correlated penalty for slashed validators in future epochs. This algorithm requires checking the activation of the Electra spec not for a report reference slot, but for future epochs.
+
 ##### Deposit Mechanism Migration
 
 It is proposed to change the logic of Accounting Oracle to account for Eth1 bridge deposits in the `pending_deposits` queue for non-activated validators with an unexpected balance (less than `LIDO_DEPOSIT_AMOUNT`) in the total balance of Lido validators on the consensus layer.
