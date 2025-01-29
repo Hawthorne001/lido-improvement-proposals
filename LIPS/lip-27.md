@@ -1,7 +1,7 @@
 ---
 lip: 27
 title: Ensuring Compatibility with Ethereum’s Pectra Upgrade
-status: Work in Progress
+status: WIP
 author: George Avsetsin
 discussions-to: TBA
 created: 2024-12-16
@@ -53,7 +53,7 @@ This proposal outlines changes to the Lido protocol to ensure continuous operati
 
 ## Abstract
 
-For the off-chain components of the Accounting, Validator Exit Bus, and CSM oracles, it is proposed to:
+For the off-chain components of the [Accounting](https://docs.lido.fi/contracts/accounting-oracle), [Validator Exit Bus](https://docs.lido.fi/contracts/validators-exit-bus-oracle), and [CSM performance](https://docs.lido.fi/staking-modules/csm/contracts/CSFeeOracle) oracles, it is proposed to:
 
 - Implement the switch to the new report collection algorithm at the time of the hardfork activation;
 - Account for Eth1 bridge deposits in the `pending_deposits` queue at the migration period after the hardfork activation;
@@ -63,20 +63,20 @@ For the off-chain components of the Accounting, Validator Exit Bus, and CSM orac
 - Support the new format of attestation containers in the CSM Oracle;
 - Update constants and helper functions in the oracles.
 
-For the Oracle Report Sanity Checker, it is proposed to update the following parameters:
+For the [Oracle Report Sanity Checker](https://docs.lido.fi/contracts/oracle-report-sanity-checker), it is proposed to update the following parameters:
 
 - `exitedValidatorsPerDayLimit`: from `9000` to `3600`;
 - `appearedValidatorsPerDayLimit`: from `43200` to `1800`;
 - `initialSlashingAmountPWei`: from `1000` to `8`.
 
-For the CS Verifier contract, it is proposed to:
+For the [CS Verifier](https://docs.lido.fi/staking-modules/csm/contracts/CSVerifier) contract, it is proposed to:
 
 - Remove the processing of slashing proofs;
 - Redeploy the contract with the Electra activation slot and two sets of gIndexes for Deneb and Electra.
 
 ## Motivation
 
-The Pectra upgrade introduces changes to the Ethereum protocol specifications that directly impact components of the Lido protocol. Specifically, these changes affect the algorithms of the Accounting, Validator Exit Bus, and CSM oracles, the limits in the Oracle Report Sanity Checker contract, the slashing penalty, and the gIndexes in the CS Verifier contract. To ensure the Lido protocol continues to operate accurately and reliably, the affected oracle algorithms, Oracle Report Sanity Checker limits, and the CS Verifier must be reviewed and updated in accordance with the new Ethereum protocol specifications.
+The [Pectra upgrade (EIP-7600)](https://eips.ethereum.org/EIPS/eip-7600) introduces changes to the Ethereum protocol specifications that directly impact components of the Lido protocol. Specifically, these changes affect the algorithms of the Accounting, Validator Exit Bus, and CSM oracles, the limits in the Oracle Report Sanity Checker contract, the slashing penalty, and the gIndexes in the CS Verifier contract. To ensure the Lido protocol continues to operate accurately and reliably, the affected oracle algorithms, Oracle Report Sanity Checker limits, and the CS Verifier must be reviewed and updated in accordance with the new Ethereum protocol specifications.
 
 ## Specification
 
