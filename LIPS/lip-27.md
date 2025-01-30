@@ -44,6 +44,14 @@ updated: 2025-01-20
     - [Technical Specification](#technical-specification-2)
       - [Remove Initial Slashing Penalty Report](#remove-initial-slashing-penalty-report-1)
       - [Update gIndexes](#update-gindexes-1)
+- [Security Considerations](#security-considerations)
+  - [Incorrect Transient Balance During Hardfork](#incorrect-transient-balance-during-hardfork)
+- [Failure Modes](#failure-modes)
+  - [Accounting Oracle Update Not Delivered Before Hardfork](#accounting-oracle-update-not-delivered-before-hardfork)
+  - [Validator Exit Bus Oracle Update Not Delivered Before Hardfork](#validator-exit-bus-oracle-update-not-delivered-before-hardfork)
+  - [CSM Oracle Update Not Delivered Before Hardfork](#csm-oracle-update-not-delivered-before-hardfork)
+  - [CS Verifier Contract Update Not Delivered Before Hardfork](#cs-verifier-contract-update-not-delivered-before-hardfork)
+  - [Mass Slashing Occurs in Community Staking Module Between Update and Hardfork](#mass-slashing-occurs-in-community-staking-module-between-update-and-hardfork)
 - [Links](#links)
 - [Copyright](#copyright)
 
@@ -707,6 +715,39 @@ FIRST_SUPPORTED_SLOT = 8626176;
 // TBA, first slot of the Electra activation epoch
 PIVOT_SLOT =
 ```
+
+## Security Considerations
+
+### Incorrect Transient Balance During Hardfork
+
+The proposed changes address the issue of incorrect transient balance accounting due to updates in the Eth1 bridge deposit processing algorithm. If the update is not delivered before the hardfork, the issue should be mitigated by pausing deposits at least `ETH1_FOLLOW_DISTANCE + EPOCHS_PER_ETH1_VOTING_PERIOD` before the hardfork activation and resuming them afterward.
+
+## Failure Modes
+
+### Accounting Oracle Update Not Delivered Before Hardfork
+
+This may break transient balance accounting if deposits are made during `ETH1_FOLLOW_DISTANCE + EPOCHS_PER_ETH1_VOTING_PERIOD` before the hardfork.
+
+The correlated penalty calculation in Bunker mode becomes invalid, potentially preventing Bunker mode activation under a negative rebase in future frames.
+
+### Validator Exit Bus Oracle Update Not Delivered Before Hardfork
+
+This causes incorrect estimates of how many validators should be requested to exit to fulfill user withdrawal requests:
+
+- Legacy `exit_queue` logic underestimates the queue’s speed, inflating the number of requested exits.
+- Legacy sweep duration logic inflates the requested exits as more validators use new withdrawal credentials and more pending partial withdrawals accumulate in the queue.
+
+### CSM Oracle Update Not Delivered Before Hardfork
+
+This leads to incorrect accounting of attestations, causing errors in operator rewards in the Community Staking Module.
+
+### CS Verifier Contract Update Not Delivered Before Hardfork
+
+This can result in burning up to 128 times more shares from an operator's bond than the actual penalty if a validator is slashed after the hardfork.
+
+### Mass Slashing Occurs in Community Staking Module Between Update and Hardfork
+
+This prevents immediate slashing reports and share burns from operator bonds, delaying these actions until the validator fully withdraws.
 
 ## Links
 
