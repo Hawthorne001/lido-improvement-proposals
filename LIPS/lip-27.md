@@ -5,7 +5,7 @@ status: WIP
 author: George Avsetsin
 discussions-to: TBA
 created: 2024-12-16
-updated: 2025-01-20
+updated: 2025-01-30
 ---
 
 # Ensuring Compatibility with Ethereum’s Pectra Upgrade
@@ -743,7 +743,7 @@ This leads to incorrect accounting of attestations, causing errors in operator r
 
 ### CS Verifier Contract Update Not Delivered Before Hardfork
 
-This can result in burning up to 128 times more shares from an operator's bond than the actual penalty if a validator is slashed after the hardfork.
+This causes the validator withdrawal proof report to break after the hardfork due to incorrect gIndexes.
 
 ### Mass Slashing Occurs in Community Staking Module Between Update and Hardfork
 
