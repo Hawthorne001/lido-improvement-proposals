@@ -16,23 +16,22 @@ This is the suggested template for new LIPs. Note that an LIP number will be ass
 
 ## Simple Summary
 <!--"If you can't explain it simply, you don't understand it well enough." Simply describe the outcome the proposed changes intends to achieve. This should be non-technical and accessible to a casual community member.-->
-"If you can't explain it simply, you don't understand it well enough." Simply describe the outcome the proposed change intends to achieve. This should be non-technical and accessible to a casual community member.
+"If you can't explain it simply, you don't understand it well enough." Simply describe the outcome the proposed changes intends to achieve. This should be non-technical and accessible to a casual community member.
 
 ## Abstract
-<!--A short (~200 word) description of the proposed change, the abstract should clearly describe the proposed change. This is what *will* be done if the LIP is implemented, not *why* it should be done or *how* it will be done. If the LIP proposes deploying a new contract, write, "we propose to deploy a new contract that will do x".-->
-A short (~200 word) description of the proposed change, the abstract should clearly describe the proposed change. This is what *will* be done if the LIP is implemented, not *why* it should be done or *how* it will be done. If the LIP proposes deploying a new contract, write, "we propose to deploy a new contract that will do x".
+<!--A short (~200 word) description of the proposed change, the abstract should clearly describe the proposed change. This is *what* will be done if the LIP is implemented, not *why* it should be done or *how* it will be done. If the LIP proposes deploying a new contract, write, "we propose to deploy a new contract that will do x".-->
+A short (~200 word) description of the proposed change, the abstract should clearly describe the proposed change. This is *what* will be done if the LIP is implemented, not *why* it should be done or *how* it will be done. If the LIP proposes deploying a new contract, write, "we propose to deploy a new contract that will do x".
 
 ## Motivation
 <!--This is the problem statement. This is the *why* of the LIP. It should clearly explain *why* the current state of the protocol is inadequate.  It is critical that you explain *why* the change is needed, if the LIP proposes changing how something is calculated, you must address *why* the current calculation is inaccurate or wrong. This is not the place to describe how the LIP will address the issue!-->
 This is the problem statement. This is the *why* of the LIP. It should clearly explain *why* the current state of the protocol is inadequate.  It is critical that you explain *why* the change is needed, if the LIP proposes changing how something is calculated, you must address *why* the current calculation is inaccurate or wrong. This is not the place to describe how the IP will address the issue!
 
 ## Specification
-<!--The specification should describe the syntax and semantics of any new feature, there are five sections
+<!--The specification should describe the syntax and semantics of any new feature, there are four sections
 1. Overview
 2. Rationale
 3. Technical Specification
 4. Test Cases
-5. Configurable Values
 -->
 
 ### Overview
@@ -48,8 +47,16 @@ This is where you explain the reasoning behind how you propose to solve the prob
 The technical specification should outline the public API of the changes proposed. That is, changes to any of the interfaces Lido Finance currently exposes or the creations of new ones.
 
 ### Test Cases
-<!--Test cases for an implementation are mandatory for LIPs but can be included with the implementation..-->
+<!--Test cases for an implementation are mandatory for LIPs but can be included with the implementation.-->
 Test cases for an implementation are mandatory for LIPs but can be included with the implementation.
+
+## Security Considerations
+<!--This is where you explain critical security measures, highlight potential vulnerabilities, and outline how these threats will be mitigated. Provide relevant design decisions, any concerns or changes that might affect security, and the steps proposed to address them.-->
+This is where you explain critical security measures, highlight potential vulnerabilities, and outline how these threats will be mitigated. Provide relevant design decisions, any concerns or changes that might affect security, and the steps proposed to address them.
+
+## Failure Modes
+<!--This is where you detail the possible ways the proposed changes could fail, identifying what events or conditions might trigger these failures. Provide actionable measures or strategies to mitigate the identified risks, and outline any monitoring or alerting techniques that could help detect issues early.-->
+This is where you detail the possible ways the proposed changes could fail, identifying what events or conditions might trigger these failures. Provide actionable measures or strategies to mitigate the identified risks, and outline any monitoring or alerting techniques that could help detect issues early.
 
 ## Copyright
 Copyright and related rights waived via [CC0](https://creativecommons.org/publicdomain/zero/1.0/).
