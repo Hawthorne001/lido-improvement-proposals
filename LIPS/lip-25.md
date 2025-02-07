@@ -1,11 +1,11 @@
 ---
 lip: 25
 title: Staking Router 2.0
-status: Proposed
+status: Implemented
 author: Kirill Minenko, Alexander Lukin
 discussions-to: https://research.lido.fi/t/lip-25-staking-router-v2-0/7773
 created: 2024-05-06
-updated: 2024-06-28
+updated: 2024-11-01
 ---
 
 # LIP-25. Staking Router 2.0
@@ -1225,13 +1225,13 @@ All the code of this contract assumes the Solidity v0.8.9 syntax.
 ```solidity
 struct LimitsList {
     /// ...
-    
+
     /// @dev Must fit into uint16 (<= 65_535)
     uint256 exitedValidatorsPerDayLimit;
 
     /// @dev Must fit into uint16 (<= 65_535)
     uint256 appearedValidatorsPerDayLimit;
-    
+
     /// ...
 }
 
@@ -1520,7 +1520,7 @@ function allocate(
 
 - [Staking Router 2.0 on-chain code](https://github.com/lidofinance/core/tree/feat/sr-1.5);
 - [New Deposit Security Module specification](https://hackmd.io/@lido/rJrTnEc2a);
-- [New Validator Exit Bus Oracle specification](https://hackmd.io/@lido/BJXRTxMRp); 
+- [New Validator Exit Bus Oracle specification](https://hackmd.io/@lido/BJXRTxMRp);
 - [Expanded third phase of the Accounting Oracle specification](https://hackmd.io/HCXVrrZAQNCm_IC0lYvJjw);
 - [Reward distribution in curated-based modules](https://hackmd.io/@lido/HJYbVq5b0);
 - [LIP-10: Proxy initializations and LidoOracle upgrade](https://github.com/lidofinance/lido-improvement-proposals/blob/develop/LIPS/lip-10.md);

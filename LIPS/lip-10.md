@@ -1,12 +1,14 @@
 ---
 lip: 10
 title: Proxy initializations and LidoOracle upgrade
-status: Implemented
+status: Moribund
 author: Artyom Veremeenko, Sam Kozin, Mihail Semenkin, Eugene Pshenichnyy, Eugene Mamin
 discussions-to: https://research.lido.fi/t/lip-10-proxy-initializations-and-lidooracle-upgrade/1616
 created: 2022-01-25
 updated: 2022-06-06
 ---
+
+> NOTE: Lido has moved to using new Solidity versions and uses upgradeable contracts from OpenZeppelin, which already include the `Initializable` contract. To avoid maintaining two initialization approaches simultaneously (LIP-10 and OZ Initializable), we propose deprecating LIP-10 and later relying on OpenZeppelin’s Initializable contract for upgradeable contracts.
 
 # Proxy initializations and LidoOracle upgrade
 
